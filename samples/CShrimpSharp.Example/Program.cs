@@ -1,15 +1,18 @@
+using System.Globalization;
 using CShrimpSharp;
 using CShrimpSharp.Collections;
 using CShrimpSharp.Concurrency;
 
 Result<int, Failure> parsed = Result
-    .Try(() => int.Parse("21"))
+    .Try(() => int.Parse("21", CultureInfo.InvariantCulture))
     .Map(value => value * 2);
 
 parsed.Switch(Console.WriteLine, Console.WriteLine);
 
+string[] values = ["a", "b"];
+
 Console.WriteLine(
-    new[] { "a", "b" }
+    values
         .AtOrNone(1)
         .GetValueOr("missing"));
 
