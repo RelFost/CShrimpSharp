@@ -2,30 +2,37 @@ using System.Globalization;
 using CShrimpSharp;
 using CShrimpSharp.Collections;
 using CShrimpSharp.Concurrency;
+using CShrimpSharp.Transactions;
 
 Result<int, Failure> parsed = Result
     .Try(() => int.Parse("21", CultureInfo.InvariantCulture))
-    .Map(value => value * 2);
-
-parsed.Switch(Console.WriteLine, Console.WriteLine);
+    .Map(static value => value * 2)
+    .Tap(static value => Console.WriteLine($"Parsed: {value}"));
 
 string[] values = ["a", "b"];
-
-Console.WriteLine(
-    values
-        .AtOrNone(1)
-        .GetValueOr("missing"));
+Console.WriteLine(values.AtOrNone(1).GetValueOr("missing"));
 
 (string profile, int count) = await Shrimp.SyncAsync(
-    async cancellationToken =>
+    async token =>
     {
-        await Task.Delay(10, cancellationToken);
+        await Task.Delay(10, token);
         return "profile";
     },
-    async cancellationToken =>
+    async token =>
     {
-        await Task.Delay(5, cancellationToken);
+        await Task.Delay(5, token);
         return 42;
     });
 
 Console.WriteLine($"{profile}: {count}");
+
+await using var transaction = new ShrimpTransaction();
+string resource = await transaction.StepAsync(
+    static _ => ValueTask.FromResult("resource-42"),
+    static (id, _) =>
+    {
+        Console.WriteLine($"Rollback {id}");
+        return ValueTask.CompletedTask;
+    });
+Console.WriteLine(resource);
+transaction.Commit();

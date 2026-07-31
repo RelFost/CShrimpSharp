@@ -2,8 +2,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+      <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CA1707;CA1861</NoWarn>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="../../src/CShrimpSharp/CShrimpSharp.csproj" />
   </ItemGroup>

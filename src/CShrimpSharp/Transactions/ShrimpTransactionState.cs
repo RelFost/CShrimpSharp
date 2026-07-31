@@ -3,15 +3,12 @@ namespace CShrimpSharp.Transactions;
 /// <summary>Describes the lifecycle state of a compensating transaction.</summary>
 public enum ShrimpTransactionState
 {
-    /// <summary>The transaction accepts steps and compensations.</summary>
+    /// <summary>The transaction accepts operations and compensation registrations.</summary>
     Active,
-
-    /// <summary>The transaction was committed.</summary>
+    /// <summary>The transaction completed successfully and compensations were discarded.</summary>
     Committed,
-
-    /// <summary>The transaction was rolled back successfully.</summary>
+    /// <summary>Every registered compensation completed successfully.</summary>
     RolledBack,
-
-    /// <summary>Rollback completed with one or more compensation failures.</summary>
+    /// <summary>Rollback completed after one or more compensations failed.</summary>
     RollbackFailed,
 }

@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Version without v, for example 0.2.0-preview.1
+        description: Version without v, for example 0.3.0-preview.1
         required: true
         type: string
       publish_nuget:
@@ -36,7 +36,7 @@ jobs:
           global-json-file: global.json
       - run: dotnet restore CShrimpSharp.sln
       - run: dotnet build CShrimpSharp.sln -c Release --no-restore -p:Version=${{ env.VERSION }}
-      - run: dotnet test CShrimpSharp.sln -c Release --no-build
+      - run: dotnet test --solution CShrimpSharp.sln -c Release --no-build
       - run: dotnet pack src/CShrimpSharp/CShrimpSharp.csproj -c Release --no-build -o artifacts -p:PackageVersion=${{ env.VERSION }}
       - run: git archive --format=zip --output=artifacts/CShrimpSharp-${{ env.VERSION }}-source.zip HEAD
       - name: Publish to nuget.org

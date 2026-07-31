@@ -31,10 +31,8 @@ dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggest
 dotnet_style_readonly_field = true:suggestion
 dotnet_diagnostic.IDE0005.severity = warning
 
-# Intentional functional-container API design.
+# Functional container factories and the C#-first Option name are intentional.
 dotnet_diagnostic.CA1000.severity = none
 dotnet_diagnostic.CA1716.severity = none
-
-# PublicApiAnalyzers is enabled. The initial 0.3 baseline files are committed and
-# will be populated from the first successful 0.3 build before making RS0016 fatal.
+# Keep API baseline advisory until PublicAPI.Unshipped.txt is generated from a successful build.
 dotnet_diagnostic.RS0016.severity = silent
