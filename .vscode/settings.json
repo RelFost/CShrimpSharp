@@ -1,0 +1,6 @@
+{
+  "dotnet.defaultSolution": "CShrimpSharp.sln",
+  "editor.formatOnSave": true,
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true
+}

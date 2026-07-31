@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version without a leading v
+        required: true
+        default: 0.1.0-preview.1
+        type: string
+      publish_nuget:
+        description: Publish package to NuGet after validation
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  RELEASE_VERSION: ${{ inputs.version }}
+
+jobs:
+  release:
+    name: Validate and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Validate version
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Invalid package version: $RELEASE_VERSION" >&2
+            exit 1
+          fi
+
+      - name: Restore
+        run: dotnet restore CShrimpSharp.sln
+
+      - name: Verify formatting
+        run: dotnet format CShrimpSharp.sln --verify-no-changes --no-restore
+
+      - name: Build
+        run: >-
+          dotnet build CShrimpSharp.sln
+          --configuration Release
+          --no-restore
+          -p:Version="$RELEASE_VERSION"
+
+      - name: Test
+        run: >-
+          dotnet test CShrimpSharp.sln
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=tests.trx"
+          --results-directory artifacts/test-results
+
+      - name: Pack
+        run: >-
+          dotnet pack src/CShrimpSharp/CShrimpSharp.csproj
+          --configuration Release
+          --no-build
+          --output artifacts/packages
+          -p:PackageVersion="$RELEASE_VERSION"
+          -p:ContinuousIntegrationBuild=true
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: cshrimp-sharp-${{ env.RELEASE_VERSION }}
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/packages/*.snupkg
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish to NuGet
+        if: ${{ inputs.publish_nuget }}
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        shell: bash
+        run: |
+          if [[ -z "$NUGET_API_KEY" ]]; then
+            echo "NUGET_API_KEY is not configured." >&2
+            exit 1
+          fi
+
+          dotnet nuget push artifacts/packages/*.nupkg \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate

@@ -1,0 +1,73 @@
+name: Bug report
+description: Report reproducible incorrect behavior in CShrimpSharp.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for providing a focused reproduction.
+  - type: input
+    id: version
+    attributes:
+      label: CShrimpSharp version or commit
+      description: State the package version or full commit SHA.
+    validations:
+      required: true
+  - type: input
+    id: dotnet
+    attributes:
+      label: .NET SDK and runtime
+      description: Paste the relevant version lines from dotnet --info.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Result and Option
+        - Composition extensions
+        - Structured concurrency
+        - Compensating transactions
+        - Packaging and build
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Actual behavior
+      description: Explain what happened, including exception type and message.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Explain the result you expected and why.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide complete compilable code or a minimal public repository.
+      render: csharp
+    validations:
+      required: true
+  - type: textarea
+    id: cancellation
+    attributes:
+      label: Cancellation, concurrency, and rollback details
+      description: State token status, task lifetime, branch order, and registered compensations when relevant.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: This report does not contain a security vulnerability.
+          required: true

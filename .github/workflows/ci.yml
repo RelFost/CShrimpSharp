@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build-test-pack:
+    name: Build, test, and pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore CShrimpSharp.sln
+
+      - name: Verify formatting
+        run: dotnet format CShrimpSharp.sln --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build CShrimpSharp.sln --configuration Release --no-restore
+
+      - name: Test
+        run: >-
+          dotnet test CShrimpSharp.sln
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=tests.trx"
+          --results-directory artifacts/test-results
+
+      - name: Run example
+        run: >-
+          dotnet run
+          --project samples/CShrimpSharp.Example/CShrimpSharp.Example.csproj
+          --configuration Release
+          --no-build
+
+      - name: Pack
+        run: >-
+          dotnet pack src/CShrimpSharp/CShrimpSharp.csproj
+          --configuration Release
+          --no-build
+          --output artifacts/packages
+          -p:ContinuousIntegrationBuild=true
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cshrimp-sharp-ci-${{ github.run_number }}
+          path: |
+            artifacts/packages
+            artifacts/test-results
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>CShrimpSharp</RootNamespace>
+    <AssemblyName>CShrimpSharp</AssemblyName>
+
+    <PackageId>CShrimpSharp</PackageId>
+    <Title>CShrimpSharp</Title>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>preview.1</VersionSuffix>
+    <Authors>RelFost</Authors>
+    <Company>CShrimp</Company>
+    <Copyright>Copyright © 2026 RelFost</Copyright>
+    <Description>Verse-inspired failable operations, structured concurrency, and compensating transactions for C# and .NET.</Description>
+    <PackageTags>verse;csharp;dotnet;result;option;structured-concurrency;transactions;async</PackageTags>
+    <PackageReleaseNotes>https://github.com/RelFost/CShrimpSharp/blob/main/CHANGELOG.md</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/RelFost/CShrimpSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/RelFost/CShrimpSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <None Include="../../assets/icon.png" Pack="true" PackagePath="/" />
+    <None Include="../../NOTICE.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>
