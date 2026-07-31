@@ -5,8 +5,31 @@ namespace CShrimpSharp.Tests;
 [TestClass]
 public sealed class CoreTests
 {
-    [TestMethod] public void OptionDefaultIsNone() => Assert.IsTrue(default(Option<string>).IsNone);
-    [TestMethod] public void ResultMapTransformsSuccess() => Assert.AreEqual(4, Result.Success(2).Map(x=>x*2).Value);
-    [TestMethod] public void ValidationAccumulatesErrors() => Assert.AreEqual(2, Validation<int,string>.Invalid("a","b").Errors.Count);
-    [TestMethod] public void SafeIndexReturnsNone() => Assert.IsTrue(new[] { 1 }.AtOrNone(2).IsNone);
+    [TestMethod]
+    public void OptionDefaultIsNone()
+    {
+        Assert.IsTrue(default(Option<string>).IsNone);
+    }
+
+    [TestMethod]
+    public void ResultMapTransformsSuccess()
+    {
+        Result<int, Failure> result = Result.Success(2).Map(value => value * 2);
+        Assert.AreEqual(4, result.Value);
+    }
+
+    [TestMethod]
+    public void ValidationAccumulatesErrors()
+    {
+        Validation<int, string> validation =
+            Validation<int, string>.Invalid("a", "b");
+
+        Assert.AreEqual(2, validation.Errors.Count);
+    }
+
+    [TestMethod]
+    public void SafeIndexReturnsNone()
+    {
+        Assert.IsTrue(new[] { 1 }.AtOrNone(2).IsNone);
+    }
 }

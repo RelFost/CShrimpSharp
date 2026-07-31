@@ -1,40 +1,17 @@
-# Build output
 [Bb]in/
 [Oo]bj/
 artifacts/
-packages/
-
-# Test output
 TestResults/
 *.trx
-*.coverage
-*.coveragexml
-coverage*.xml
-
-# IDEs and editors
+*.coverage*
 .vs/
 .idea/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
 *.user
 *.suo
-*.userosscache
-*.sln.docstates
-_ReSharper*/
-*.DotSettings.user
-
-# NuGet
 *.nupkg
 *.snupkg
-.nuget/
-
-# Operating systems
 .DS_Store
 Thumbs.db
-
-# Local tooling
 .env
 .env.*
-!.env.example
 *.log

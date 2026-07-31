@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Restored standard C# formatting and XML documentation for all public preview APIs.
+
 ### Added
 
 - Mirrored English and Russian documentation.
