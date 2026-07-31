@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <RootNamespace>CShrimpSharp</RootNamespace>
     <AssemblyName>CShrimpSharp</AssemblyName>
     <PackageId>CShrimpSharp</PackageId>
     <Title>CShrimpSharp</Title>
-    <VersionPrefix>0.2.0</VersionPrefix>
+    <VersionPrefix>0.3.0</VersionPrefix>
     <VersionSuffix>preview.1</VersionSuffix>
     <Authors>RelFost</Authors>
     <Company>CShrimp</Company>
@@ -23,10 +23,18 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
+
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="all" />
   </ItemGroup>
+
   <ItemGroup>
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
     <None Include="../../README.md" Pack="true" PackagePath="/" />
     <None Include="../../NOTICE.md" Pack="true" PackagePath="/" />
   </ItemGroup>
