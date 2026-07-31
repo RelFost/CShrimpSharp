@@ -1,105 +1,51 @@
 name: Release
-
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       version:
-        description: Package version without a leading v
+        description: Version without v, for example 0.2.0-preview.1
         required: true
-        default: 0.1.0-preview.1
         type: string
       publish_nuget:
-        description: Publish package to NuGet after validation
+        description: Publish to nuget.org
         required: true
         default: false
         type: boolean
-
+      publish_github_packages:
+        description: Publish to GitHub Packages
+        required: true
+        default: true
+        type: boolean
 permissions:
-  contents: read
-
-env:
-  DOTNET_NOLOGO: true
-  DOTNET_CLI_TELEMETRY_OPTOUT: true
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-  RELEASE_VERSION: ${{ inputs.version }}
-
+  contents: write
+  packages: write
 jobs:
   release:
-    name: Validate and package
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    env:
+      VERSION: ${{ inputs.version || github.ref_name }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Install .NET SDK
-        uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@v6
+      - name: Normalize version
+        shell: bash
+        run: echo "VERSION=${VERSION#v}" >> "$GITHUB_ENV"
+      - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
-
-      - name: Validate version
-        shell: bash
-        run: |
-          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
-            echo "Invalid package version: $RELEASE_VERSION" >&2
-            exit 1
-          fi
-
-      - name: Restore
-        run: dotnet restore CShrimpSharp.sln
-
-      - name: Verify formatting
-        run: dotnet format CShrimpSharp.sln --verify-no-changes --no-restore
-
-      - name: Build
-        run: >-
-          dotnet build CShrimpSharp.sln
-          --configuration Release
-          --no-restore
-          -p:Version="$RELEASE_VERSION"
-
-      - name: Test
-        run: >-
-          dotnet test CShrimpSharp.sln
-          --configuration Release
-          --no-build
-          --logger "trx;LogFileName=tests.trx"
-          --results-directory artifacts/test-results
-
-      - name: Pack
-        run: >-
-          dotnet pack src/CShrimpSharp/CShrimpSharp.csproj
-          --configuration Release
-          --no-build
-          --output artifacts/packages
-          -p:PackageVersion="$RELEASE_VERSION"
-          -p:ContinuousIntegrationBuild=true
-
-      - name: Upload package artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: cshrimp-sharp-${{ env.RELEASE_VERSION }}
-          path: |
-            artifacts/packages/*.nupkg
-            artifacts/packages/*.snupkg
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Publish to NuGet
-        if: ${{ inputs.publish_nuget }}
+      - run: dotnet restore CShrimpSharp.sln
+      - run: dotnet build CShrimpSharp.sln -c Release --no-restore -p:Version=${{ env.VERSION }}
+      - run: dotnet test CShrimpSharp.sln -c Release --no-build
+      - run: dotnet pack src/CShrimpSharp/CShrimpSharp.csproj -c Release --no-build -o artifacts -p:PackageVersion=${{ env.VERSION }}
+      - run: git archive --format=zip --output=artifacts/CShrimpSharp-${{ env.VERSION }}-source.zip HEAD
+      - name: Publish to nuget.org
+        if: ${{ inputs.publish_nuget == true }}
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Publish to GitHub Packages
+        if: ${{ inputs.publish_github_packages != false }}
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ secrets.GITHUB_TOKEN }}" --source https://nuget.pkg.github.com/RelFost/index.json --skip-duplicate
+      - name: Create GitHub Release
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        shell: bash
-        run: |
-          if [[ -z "$NUGET_API_KEY" ]]; then
-            echo "NUGET_API_KEY is not configured." >&2
-            exit 1
-          fi
-
-          dotnet nuget push artifacts/packages/*.nupkg \
-            --api-key "$NUGET_API_KEY" \
-            --source https://api.nuget.org/v3/index.json \
-            --skip-duplicate
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "v${{ env.VERSION }}" artifacts/*.nupkg artifacts/*.snupkg artifacts/*-source.zip --title "CShrimpSharp v${{ env.VERSION }}" --generate-notes --prerelease

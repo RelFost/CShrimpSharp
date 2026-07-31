@@ -1,57 +1,22 @@
 namespace CShrimpSharp;
 
 /// <summary>
-/// Describes a failure as data instead of using an exception for ordinary control flow.
+/// Describes an expected operation failure with a stable code and readable message.
 /// </summary>
-public sealed record Failure
+/// <param name="Code">A stable machine-readable error code.</param>
+/// <param name="Message">A human-readable error message.</param>
+/// <param name="Exception">The source exception when the failure was created at an exception boundary.</param>
+public sealed record Failure(string Code, string Message, Exception? Exception = null)
 {
-    /// <summary>
-    /// Initializes a new failure.
-    /// </summary>
-    /// <param name="code">A stable machine-readable code.</param>
-    /// <param name="message">A human-readable description.</param>
-    /// <param name="exception">The optional exception that caused the failure.</param>
-    public Failure(string code, string message, Exception? exception = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(code);
-        ArgumentException.ThrowIfNullOrWhiteSpace(message);
-
-        Code = code;
-        Message = message;
-        Exception = exception;
-    }
-
-    /// <summary>
-    /// Gets the stable machine-readable failure code.
-    /// </summary>
-    public string Code { get; }
-
-    /// <summary>
-    /// Gets the human-readable failure message.
-    /// </summary>
-    public string Message { get; }
-
-    /// <summary>
-    /// Gets the optional exception that caused the failure.
-    /// </summary>
-    public Exception? Exception { get; }
-
     /// <summary>
     /// Creates a failure from an exception.
     /// </summary>
     /// <param name="exception">The source exception.</param>
-    /// <param name="code">The stable failure code.</param>
-    /// <returns>A failure containing the exception.</returns>
-    public static Failure FromException(Exception exception, string code = "unexpected_error")
+    /// <returns>A failure containing the exception type and message.</returns>
+    public static Failure FromException(Exception exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
-        ArgumentException.ThrowIfNullOrWhiteSpace(code);
-
-        string message = string.IsNullOrWhiteSpace(exception.Message)
-            ? exception.GetType().Name
-            : exception.Message;
-
-        return new Failure(code, message, exception);
+        return new Failure(exception.GetType().Name, exception.Message, exception);
     }
 
     /// <inheritdoc />

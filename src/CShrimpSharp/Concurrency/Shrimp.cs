@@ -1,222 +1,100 @@
 namespace CShrimpSharp.Concurrency;
 
 /// <summary>
-/// Verse-inspired structured-concurrency operations for .NET tasks.
+/// Provides Verse-inspired structured-concurrency operations for .NET tasks.
 /// </summary>
 public static class Shrimp
 {
     /// <summary>
-    /// Runs a structured scope that waits for all registered branches before returning.
+    /// Starts all operations concurrently and returns their values in input order.
+    /// A failing operation requests cancellation of its siblings.
     /// </summary>
-    public static async ValueTask ScopeAsync(
-        Func<ShrimpScope, CancellationToken, ValueTask> body,
-        CancellationToken cancellationToken = default,
-        ShrimpScopeOptions? options = null)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-
-        var scope = new ShrimpScope(cancellationToken, options);
-
-        try
-        {
-            await body(scope, scope.Token).ConfigureAwait(false);
-            await scope.JoinAsync().ConfigureAwait(false);
-        }
-        catch
-        {
-            await scope.DisposeSilentlyAsync().ConfigureAwait(false);
-            throw;
-        }
-        finally
-        {
-            if (!scope.IsDisposed)
-            {
-                await scope.DisposeAsync().ConfigureAwait(false);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Runs a structured scope and returns the body's value after every branch completes.
-    /// </summary>
-    public static async ValueTask<TValue> ScopeAsync<TValue>(
-        Func<ShrimpScope, CancellationToken, ValueTask<TValue>> body,
-        CancellationToken cancellationToken = default,
-        ShrimpScopeOptions? options = null)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-
-        var scope = new ShrimpScope(cancellationToken, options);
-
-        try
-        {
-            TValue value = await body(scope, scope.Token).ConfigureAwait(false);
-            await scope.JoinAsync().ConfigureAwait(false);
-            return value;
-        }
-        catch
-        {
-            await scope.DisposeSilentlyAsync().ConfigureAwait(false);
-            throw;
-        }
-        finally
-        {
-            if (!scope.IsDisposed)
-            {
-                await scope.DisposeAsync().ConfigureAwait(false);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Runs all operations concurrently and completes after every operation succeeds.
-    /// A non-cancellation failure requests cancellation of sibling operations.
-    /// </summary>
-    public static ValueTask SyncAsync(
-        params Func<CancellationToken, ValueTask>[] operations) =>
-        SyncAsync(operations, CancellationToken.None);
-
-    /// <summary>
-    /// Runs all operations concurrently and completes after every operation succeeds.
-    /// A non-cancellation failure requests cancellation of sibling operations.
-    /// </summary>
-    public static ValueTask SyncAsync(
-        CancellationToken cancellationToken,
-        params Func<CancellationToken, ValueTask>[] operations) =>
-        SyncAsync(operations, cancellationToken);
-
-    /// <summary>
-    /// Runs all operations concurrently and completes after every operation succeeds.
-    /// A non-cancellation failure requests cancellation of sibling operations.
-    /// </summary>
-    public static async ValueTask SyncAsync(
-        IEnumerable<Func<CancellationToken, ValueTask>> operations,
+    public static async ValueTask<IReadOnlyList<T>> SyncAsync<T>(
+        IEnumerable<Func<CancellationToken, ValueTask<T>>> operations,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operations);
 
-        Func<CancellationToken, ValueTask>[] operationArray = [.. operations];
+        Func<CancellationToken, ValueTask<T>>[] operationArray = [.. operations];
         ValidateOperations(operationArray);
 
         using var linkedCancellation =
             CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        var tasks = new Task[operationArray.Length];
+        Task<T>[] tasks = operationArray
+            .Select(operation => RunSyncOperationAsync(operation, linkedCancellation))
+            .ToArray();
 
-        for (int index = 0; index < operationArray.Length; index++)
-        {
-            tasks[index] = RunSyncOperationAsync(
-                operationArray[index],
-                linkedCancellation);
-        }
-
-        await Task.WhenAll(tasks).ConfigureAwait(false);
+        return await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Runs all operations concurrently and returns their values in input order.
-    /// A non-cancellation failure requests cancellation of sibling operations.
+    /// Starts all operations concurrently and returns their values in input order.
     /// </summary>
-    public static ValueTask<IReadOnlyList<TValue>> SyncAsync<TValue>(
-        params Func<CancellationToken, ValueTask<TValue>>[] operations) =>
+    public static ValueTask<IReadOnlyList<T>> SyncAsync<T>(
+        params Func<CancellationToken, ValueTask<T>>[] operations) =>
         SyncAsync(operations, CancellationToken.None);
 
     /// <summary>
-    /// Runs all operations concurrently and returns their values in input order.
-    /// A non-cancellation failure requests cancellation of sibling operations.
+    /// Starts two differently typed operations concurrently and returns a typed tuple.
     /// </summary>
-    public static ValueTask<IReadOnlyList<TValue>> SyncAsync<TValue>(
-        CancellationToken cancellationToken,
-        params Func<CancellationToken, ValueTask<TValue>>[] operations) =>
-        SyncAsync(operations, cancellationToken);
-
-    /// <summary>
-    /// Runs all operations concurrently and returns their values in input order.
-    /// A non-cancellation failure requests cancellation of sibling operations.
-    /// </summary>
-    public static async ValueTask<IReadOnlyList<TValue>> SyncAsync<TValue>(
-        IEnumerable<Func<CancellationToken, ValueTask<TValue>>> operations,
+    public static async ValueTask<(T1 First, T2 Second)> SyncAsync<T1, T2>(
+        Func<CancellationToken, ValueTask<T1>> first,
+        Func<CancellationToken, ValueTask<T2>> second,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(operations);
-
-        Func<CancellationToken, ValueTask<TValue>>[] operationArray = [.. operations];
-        ValidateOperations(operationArray);
+        ArgumentNullException.ThrowIfNull(first);
+        ArgumentNullException.ThrowIfNull(second);
 
         using var linkedCancellation =
             CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        var tasks = new Task<TValue>[operationArray.Length];
+        Task<T1> firstTask = RunSyncOperationAsync(first, linkedCancellation);
+        Task<T2> secondTask = RunSyncOperationAsync(second, linkedCancellation);
 
-        for (int index = 0; index < operationArray.Length; index++)
-        {
-            tasks[index] = RunSyncOperationAsync(
-                operationArray[index],
-                linkedCancellation);
-        }
+        await Task.WhenAll(firstTask, secondTask).ConfigureAwait(false);
 
-        TValue[] values = await Task.WhenAll(tasks).ConfigureAwait(false);
-        return values;
+        return (
+            await firstTask.ConfigureAwait(false),
+            await secondTask.ConfigureAwait(false));
     }
 
     /// <summary>
-    /// Returns the first operation to complete and cancels all losing operations.
-    /// The method drains the losers before returning so no child operation outlives the race.
+    /// Returns the first completed operation and requests cancellation of all losers.
+    /// Every child task is observed before the method returns.
     /// </summary>
-    public static ValueTask<RaceResult<TValue>> RaceAsync<TValue>(
-        params Func<CancellationToken, ValueTask<TValue>>[] operations) =>
-        RaceAsync(operations, CancellationToken.None);
-
-    /// <summary>
-    /// Returns the first operation to complete and cancels all losing operations.
-    /// The method drains the losers before returning so no child operation outlives the race.
-    /// </summary>
-    public static ValueTask<RaceResult<TValue>> RaceAsync<TValue>(
-        CancellationToken cancellationToken,
-        params Func<CancellationToken, ValueTask<TValue>>[] operations) =>
-        RaceAsync(operations, cancellationToken);
-
-    /// <summary>
-    /// Returns the first operation to complete and cancels all losing operations.
-    /// The method drains the losers before returning so no child operation outlives the race.
-    /// </summary>
-    public static async ValueTask<RaceResult<TValue>> RaceAsync<TValue>(
-        IEnumerable<Func<CancellationToken, ValueTask<TValue>>> operations,
+    public static async ValueTask<RaceResult<T>> RaceAsync<T>(
+        IEnumerable<Func<CancellationToken, ValueTask<T>>> operations,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operations);
 
-        Func<CancellationToken, ValueTask<TValue>>[] operationArray = [.. operations];
+        Func<CancellationToken, ValueTask<T>>[] operationArray = [.. operations];
         ValidateOperations(operationArray);
 
         if (operationArray.Length == 0)
         {
             throw new ArgumentException(
-                "At least one operation is required for a race.",
+                "At least one operation is required.",
                 nameof(operations));
         }
 
         using var linkedCancellation =
             CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        var tasks = new Task<TValue>[operationArray.Length];
+        Task<T>[] tasks = operationArray
+            .Select(operation => operation(linkedCancellation.Token).AsTask())
+            .ToArray();
 
-        for (int index = 0; index < operationArray.Length; index++)
-        {
-            tasks[index] = RunRaceOperationAsync(
-                operationArray[index],
-                linkedCancellation.Token);
-        }
-
-        Task<TValue> winner = await Task.WhenAny(tasks).ConfigureAwait(false);
+        Task<T> winner = await Task.WhenAny(tasks).ConfigureAwait(false);
         int winnerIndex = Array.IndexOf(tasks, winner);
 
         TryCancelSilently(linkedCancellation);
 
         try
         {
-            TValue value = await winner.ConfigureAwait(false);
-            return new RaceResult<TValue>(winnerIndex, value);
+            T value = await winner.ConfigureAwait(false);
+            return new RaceResult<T>(winnerIndex, value);
         }
         finally
         {
@@ -224,48 +102,60 @@ public static class Shrimp
         }
     }
 
-    private static async Task RunSyncOperationAsync(
-        Func<CancellationToken, ValueTask> operation,
-        CancellationTokenSource siblingCancellation)
+    /// <summary>
+    /// Returns the first completed operation and requests cancellation of all losers.
+    /// </summary>
+    public static ValueTask<RaceResult<T>> RaceAsync<T>(
+        params Func<CancellationToken, ValueTask<T>>[] operations) =>
+        RaceAsync(operations, CancellationToken.None);
+
+    /// <summary>
+    /// Runs an operation with a timeout while preserving external cancellation.
+    /// </summary>
+    /// <exception cref="TimeoutException">The timeout elapsed before completion.</exception>
+    public static async ValueTask<T> WithTimeoutAsync<T>(
+        Func<CancellationToken, ValueTask<T>> operation,
+        TimeSpan timeout,
+        CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(operation);
+
+        if (timeout <= TimeSpan.Zero && timeout != Timeout.InfiniteTimeSpan)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout));
+        }
+
+        using var timeoutCancellation =
+            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        timeoutCancellation.CancelAfter(timeout);
+
         try
         {
-            await operation(siblingCancellation.Token).ConfigureAwait(false);
+            return await operation(timeoutCancellation.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (siblingCancellation.IsCancellationRequested)
+        catch (OperationCanceledException)
+            when (!cancellationToken.IsCancellationRequested &&
+                  timeoutCancellation.IsCancellationRequested)
         {
-            throw;
-        }
-        catch
-        {
-            TryCancelSilently(siblingCancellation);
-            throw;
+            throw new TimeoutException($"Operation exceeded {timeout}.");
         }
     }
 
-    private static async Task<TValue> RunSyncOperationAsync<TValue>(
-        Func<CancellationToken, ValueTask<TValue>> operation,
+    private static async Task<T> RunSyncOperationAsync<T>(
+        Func<CancellationToken, ValueTask<T>> operation,
         CancellationTokenSource siblingCancellation)
     {
         try
         {
             return await operation(siblingCancellation.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (siblingCancellation.IsCancellationRequested)
-        {
-            throw;
-        }
         catch
         {
             TryCancelSilently(siblingCancellation);
             throw;
         }
     }
-
-    private static async Task<TValue> RunRaceOperationAsync<TValue>(
-        Func<CancellationToken, ValueTask<TValue>> operation,
-        CancellationToken cancellationToken) =>
-        await operation(cancellationToken).ConfigureAwait(false);
 
     private static async ValueTask ObserveAllAsync(IEnumerable<Task> tasks)
     {
@@ -275,7 +165,7 @@ public static class Shrimp
         }
         catch
         {
-            // Tasks are intentionally observed here. The winning task decides race outcome.
+            // All child tasks are intentionally observed. The winner defines the race outcome.
         }
     }
 
@@ -298,7 +188,7 @@ public static class Shrimp
         }
         catch (AggregateException)
         {
-            // A cancellation callback must not replace the operation failure.
+            // Cancellation callbacks must not replace the original operation result.
         }
     }
 }
