@@ -1,30 +1,28 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CShrimpSharp", "src\CShrimpSharp\CShrimpSharp.csproj", "{62A65B43-7032-4FA8-95AC-5C7412EE60E7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CShrimpSharp", "src\CShrimpSharp\CShrimpSharp.csproj", "{11111111-1111-1111-1111-111111111111}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CShrimpSharp.Tests", "tests\CShrimpSharp.Tests\CShrimpSharp.Tests.csproj", "{8F14246A-1972-4D2D-89BA-D8C29C07C19F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CShrimpSharp.Tests", "tests\CShrimpSharp.Tests\CShrimpSharp.Tests.csproj", "{22222222-2222-2222-2222-222222222222}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CShrimpSharp.Example", "samples\CShrimpSharp.Example\CShrimpSharp.Example.csproj", "{688889C9-E8D4-4F52-BCC3-D3A72386B47D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CShrimpSharp.Example", "samples\CShrimpSharp.Example\CShrimpSharp.Example.csproj", "{33333333-3333-3333-3333-333333333333}"
 EndProject
 Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{62A65B43-7032-4FA8-95AC-5C7412EE60E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{62A65B43-7032-4FA8-95AC-5C7412EE60E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{62A65B43-7032-4FA8-95AC-5C7412EE60E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{62A65B43-7032-4FA8-95AC-5C7412EE60E7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8F14246A-1972-4D2D-89BA-D8C29C07C19F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8F14246A-1972-4D2D-89BA-D8C29C07C19F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8F14246A-1972-4D2D-89BA-D8C29C07C19F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8F14246A-1972-4D2D-89BA-D8C29C07C19F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{688889C9-E8D4-4F52-BCC3-D3A72386B47D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{688889C9-E8D4-4F52-BCC3-D3A72386B47D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{688889C9-E8D4-4F52-BCC3-D3A72386B47D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{688889C9-E8D4-4F52-BCC3-D3A72386B47D}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
+ GlobalSection(SolutionConfigurationPlatforms) = preSolution
+  Debug|Any CPU = Debug|Any CPU
+  Release|Any CPU = Release|Any CPU
+ EndGlobalSection
+ GlobalSection(ProjectConfigurationPlatforms) = postSolution
+  {11111111-1111-1111-1111-111111111111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {11111111-1111-1111-1111-111111111111}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {11111111-1111-1111-1111-111111111111}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {11111111-1111-1111-1111-111111111111}.Release|Any CPU.Build.0 = Release|Any CPU
+  {22222222-2222-2222-2222-222222222222}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {22222222-2222-2222-2222-222222222222}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {22222222-2222-2222-2222-222222222222}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {22222222-2222-2222-2222-222222222222}.Release|Any CPU.Build.0 = Release|Any CPU
+  {33333333-3333-3333-3333-333333333333}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {33333333-3333-3333-3333-333333333333}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {33333333-3333-3333-3333-333333333333}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {33333333-3333-3333-3333-333333333333}.Release|Any CPU.Build.0 = Release|Any CPU
+ EndGlobalSection
 EndGlobal
