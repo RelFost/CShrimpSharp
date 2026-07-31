@@ -1,26 +1,72 @@
 name: CI
+
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
   build-test-pack:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v6
+
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
-      - run: dotnet restore CShrimpSharp.sln
-      - run: dotnet format CShrimpSharp.sln --verify-no-changes --no-restore
-      - run: dotnet build CShrimpSharp.sln -c Release --no-restore
-      - run: dotnet test CShrimpSharp.sln -c Release --no-build
-      - run: dotnet pack src/CShrimpSharp/CShrimpSharp.csproj -c Release --no-build -o artifacts/packages
+
+      - name: Restore
+        run: dotnet restore CShrimpSharp.sln
+
+      - name: Verify formatting
+        run: dotnet format CShrimpSharp.sln --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build CShrimpSharp.sln --configuration Release --no-restore
+
+      - name: Test net8.0 and net10.0
+        run: dotnet test --solution CShrimpSharp.sln --configuration Release --no-build --report-trx --results-directory artifacts/test-results
+
+      - name: Pack
+        run: dotnet pack src/CShrimpSharp/CShrimpSharp.csproj --configuration Release --no-build --output artifacts/packages
+
+      - name: NuGet package smoke test
+        shell: bash
+        run: |
+          dotnet new console --name CShrimpSharp.PackageSmoke --output artifacts/package-smoke --framework net8.0
+          dotnet add artifacts/package-smoke/CShrimpSharp.PackageSmoke.csproj package CShrimpSharp \
+            --version 0.3.0-preview.1 \
+            --source "$GITHUB_WORKSPACE/artifacts/packages"
+          cat > artifacts/package-smoke/Program.cs <<'EOF'
+          using CShrimpSharp;
+
+          Result<int, Failure> result = Result.Success(42);
+          Console.WriteLine(result.Value);
+          EOF
+          dotnet run --project artifacts/package-smoke/CShrimpSharp.PackageSmoke.csproj --configuration Release
+
+      - name: Native AOT and trimming smoke test
+        run: >-
+          dotnet publish samples/CShrimpSharp.Example/CShrimpSharp.Example.csproj
+          --configuration Release
+          --runtime linux-x64
+          --self-contained true
+          -p:PublishAot=true
+          -p:PublishTrimmed=true
+          -p:TrimMode=full
+          --output artifacts/aot
+
+      - name: Run AOT sample
+        run: artifacts/aot/CShrimpSharp.Example
+
       - name: Create source archive
         run: git archive --format=zip --output=artifacts/CShrimpSharp-source.zip HEAD
+
       - uses: actions/upload-artifact@v7
         with:
           name: cshrimp-sharp-${{ github.sha }}
